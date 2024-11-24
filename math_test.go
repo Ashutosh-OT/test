@@ -2,25 +2,24 @@ package math
 
 import "testing"
 
-// arg1 means argument 1 and arg2 means argument 2, and the expected stands for the 'result we expect'
+// addTest represents a test case for the Add function
 type addTest struct {
-    arg1, arg2, expected int
+	arg1, arg2, expected int
 }
 
+// Define test cases for the Add function
 var addTests = []addTest{
-    addTest{2, 3, 5},
-    addTest{4, 8, 12},
-    addTest{6, 9, 15},
-    addTest{3, 10, 13},
-    
+	{2, 3, 5},
+	{4, 8, 12},
+	{6, 9, 15},
+	{3, 10, 13},
 }
 
-
-func TestAdd(t *testing.T){
-
-    for _, test := range addTests{
-        if output := Add(test.arg1, test.arg2); output != test.expected {
-            t.Errorf("Output %q not equal to expected %q", output, test.expected)
-        }
-    }
+func TestAdd(t *testing.T) {
+	for _, test := range addTests {
+		output := Add(test.arg1, test.arg2)
+		if output != test.expected {
+			t.Errorf("Add(%d, %d) = %d; want %d", test.arg1, test.arg2, output, test.expected)
+		}
+	}
 }
