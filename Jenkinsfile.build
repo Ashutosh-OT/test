@@ -86,7 +86,7 @@ node {
     // Notification
     notification_enabled: false,
     notification_channel: "teams",
-    webhook_url_creds_id: "teams_webhook"
-    clean_workspace_end: false,
+    webhook_url_creds_id: "teams_webhook",
+    clean_workspace_end: false
   ])
 }
