@@ -1,25 +1,18 @@
-FROM golang:latest AS build-env
+# Use a minimal runtime image
+FROM alpine:latest
 MAINTAINER Opstree Solutions
 
-# Set working directory
+# Set the working directory inside the container
 WORKDIR /app
 
-# Copy all files from the current directory into the container
-COPY . .
-
-# Download dependencies and build the Go application
-RUN go get -v -t ./... && \
-    go build -o /app/ot-go-webapp .
-
-# Use a minimal image for runtime
-FROM alpine:latest
-WORKDIR /app
-
-# Install required dependencies
+# Install required runtime dependencies
 RUN apk add --no-cache libc6-compat bash
 
-# Copy the built binary from the build stage
-COPY --from=build-env /app/ot-go-webapp /app/
+# Copy the prebuilt binary into the container
+COPY app_binary /app/
+
+# Ensure the binary has execute permissions
+RUN chmod +x /app/app_binary
 
 # Define the default command to run your application
-ENTRYPOINT ["./ot-go-webapp"]
+ENTRYPOINT ["./app_binary"]
