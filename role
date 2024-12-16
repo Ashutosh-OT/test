@@ -13,6 +13,10 @@ Parameters:
     Type: CommaDelimitedList
     Description: List of AWS Account IDs that are allowed to assume this role.
 
+  InstanceIDs:
+    Type: CommaDelimitedList
+    Description: Comma-separated list of EC2 Instance IDs to attach this role.
+
 Resources:
   IAMRole:
     Type: AWS::IAM::Role
