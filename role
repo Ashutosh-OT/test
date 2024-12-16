@@ -136,7 +136,7 @@ Resources:
           Effect: Allow
           Action: kinesis:*
           Resource:
-          - arn:aws:kinesis:us-east-1:840814567073:stream/eadm*
+          - !Sub arn:aws:kinesis:us-east-1:840814567073:stream/eadm*
   IAMGroupPolicyCloudformationPolicy:
     Type: AWS::IAM::Policy
     Properties:
