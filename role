@@ -1,0 +1,244 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  Env:
+    Type: String
+    Default: DEV
+    AllowedValues: 
+      - DEV
+      - QAT
+      - PRD
+    Description: Enter Environment Name. 
+
+Resources:
+  IAMRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub route-opt-jenkins-${Env}
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+                - lambda.amazonaws.com
+                - glue.amazonaws.com
+                - states.amazonaws.com     
+                - sqs.amazonaws.com          
+                - sns.amazonaws.com          
+                - events.amazonaws.com 
+            Action: sts:AssumeRole
+
+  IAMRolePolicyCloudWatchLogPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: CloudWatchLog-policy
+      Roles:
+        - Ref: IAMRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: VisualEditor0
+            Effect: Allow
+            Action: logs:*
+            Resource: '*'
+
+  IAMRolePolicyEventPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: event-policy
+      Roles:
+        - Ref: IAMRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: VisualEditor0
+            Effect: Allow
+            Action:
+              - events:DescribeRule
+              - events:Put*
+              - events:List*
+              - events:Describe*
+              - events:Test*
+              - events:Create*
+              - events:EnableRule
+              - events:Put*
+              - events:TagResource
+              - events:UntagResource
+            Resource:
+              - !Sub arn:aws:events:us-east-1:${AWS::AccountId}:rule/eadm*
+              - !Sub arn:aws:events:us-east-1:${AWS::AccountId}:rule/route-opt*
+              - !Sub arn:aws:events:us-east-1:${AWS::AccountId}:rule/ocs*
+              - !Sub arn:aws:events:us-east-1:${AWS::AccountId}:rule/newton*
+              - !Sub arn:aws:events:us-east-1:${AWS::AccountId}:rule/build*
+
+  IAMRolePolicyIamPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: iam-policy
+      Roles:
+        - Ref: IAMRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Action:
+              - iam:PassRole
+            Resource:
+              - !Sub arn:aws:iam::${AWS::AccountId}:role/EMR-Serverless-runtime-role
+              - !Sub arn:aws:iam::${AWS::AccountId}:role/route-opt-lambda-role*
+              - !Sub arn:aws:iam::${AWS::AccountId}:role/opan-main-lambda-role*
+              - !Sub arn:aws:iam::${AWS::AccountId}:role/route-opt-ec2-role*
+              - !Sub arn:aws:iam::${AWS::AccountId}:role/opan-route-opt-glue-role
+            Effect: Allow
+
+  IAMRolePolicySnsPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: SNS-policy
+      Roles:
+        - Ref: IAMRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: VisualEditor0
+            Effect: Allow
+            Action: sns:*
+            Resource:
+              - !Sub arn:aws:sns:us-east-1:${AWS::AccountId}:oc-*
+              - !Sub arn:aws:sns:us-east-1:${AWS::AccountId}:route-opt*
+              - !Sub arn:aws:sns:us-east-1:${AWS::AccountId}:ocs*
+              - !Sub arn:aws:sns:us-east-1:${AWS::AccountId}:eadm*
+              - !Sub arn:aws:sns:us-east-1:${AWS::AccountId}:data*
+
+  IAMRolePolicyAmazonKinesisFullAccess:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: AmazonKinesisFullAccess
+      Roles:
+        - Ref: IAMRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: VisualEditor0
+            Effect: Allow
+            Action: kinesis:*
+            Resource:
+              - !Sub arn:aws:kinesis:us-east-1:${AWS::AccountId}:stream/eadm*
+
+  IAMRolePolicyCloudformationPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: cloudformation-policy
+      Roles:
+        - Ref: IAMRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: VisualEditor0
+            Effect: Allow
+            Action:
+              - cloudformation:DescribeStackEvents
+              - cloudformation:CreateStack
+              - cloudformation:UpdateStack
+              - cloudformation:CreateChangeSet
+              - cloudformation:DescribeChangeSet
+              - cloudformation:ExecuteChangeSet
+              - cloudformation:GetTemplate
+              - cloudformation:ListChangeSets
+            Resource: '*'
+
+  IAMRolePolicyLambdaPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: lambda-policy
+      Roles:
+        - Ref: IAMRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: Statement1
+            Effect: Allow
+            Action:
+              - lambda:List*
+              - lambda:Get*
+              - lambda:Create*
+              - lambda:Invoke*
+            Resource:
+              - !Sub arn:aws:lambda:us-east-1:${AWS::AccountId}:function:route-opt*
+              - !Sub arn:aws:lambda:us-east-1:${AWS::AccountId}:layer:route-opt*
+
+  IAMRolePolicyS3Policy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: s3-policy
+      Roles:
+        - Ref: IAMRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: Statement1
+            Effect: Allow
+            Action:
+              - s3:List*
+              - s3:Get*
+              - s3:Create*
+              - s3:Put*
+            Resource:
+              - arn:aws:s3:::opan*
+              - arn:aws:s3:::route-opt*
+
+  IAMRolePolicySqsPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: sqs-policy
+      Roles:
+        - Ref: IAMRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: Statement1
+            Effect: Allow
+            Action:
+              - sqs:Get*
+              - sqs:List*
+              - sqs:SendMessage
+              - sqs:ChangeMessageVisibility
+            Resource:
+              - !Sub arn:aws:sqs:us-east-1:${AWS::AccountId}:route-opt*
+
+  IAMRolePolicyGluePolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: glue-policy
+      Roles:
+        - Ref: IAMRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: VisualEditor0
+            Effect: Allow
+            Action:
+              - glue:Create*
+              - glue:Update*
+              - glue:Delete*
+              - glue:Get*
+              - glue:List*
+            Resource:
+              - !Sub arn:aws:glue:us-east-1:${AWS::AccountId}:job/route-opt-*
+
+  IAMRoleStepFunctionPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: step-function-policy
+      Roles:
+        - Ref: IAMRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: VisualEditor0
+            Effect: Allow
+            Action:
+              - states:CreateStateMachine
+              - states:DescribeStateMachine
+            Resource:    
+              - !Sub arn:aws:states:us-east-1:${AWS::AccountId}:stateMachine:route-opt-*
