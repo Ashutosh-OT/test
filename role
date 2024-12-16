@@ -13,7 +13,7 @@ Resources:
   IAMRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub route-opt-jenkins-${Env}
+      RoleName: !Sub route-opt-bp-role-${Env}
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
