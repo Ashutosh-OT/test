@@ -1,0 +1,451 @@
+#Dev: aws cloudformation deploy --template CF_jenkins_user_opan.yaml --stack-name  CF-route-opt-jenkins-user --parameters Env=DEV --capabilities CAPABILITY_NAMED_IAM --tags Owner=collections Project=shared
+#Qat: aws cloudformation deploy --template CF_jenkins_user_opan.yaml --stack-name  CF-route-opt-jenkins-user --parameters Env=QAT --capabilities CAPABILITY_NAMED_IAM --tags Owner=collections Project=shared
+#Prd: aws cloudformation deploy --template CF_jenkins_user_opan.yaml --stack-name  CF-route-opt-jenkins-user --parameters Env=PRD --capabilities CAPABILITY_NAMED_IAM --tags Owner=collections Project=shared
+
+AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  Env:
+    Type: String
+    Default: DEV
+    AllowedValues: 
+      - DEV
+      - QAT
+      - PRD
+    Description: Enter Environment Name. 
+
+Resources:
+  IAMUser:
+    Type: AWS::IAM::User
+    Properties:
+      UserName: route_opt_jenkins
+  IAMGroup:
+    Type: AWS::IAM::Group
+    Properties:
+      GroupName: !Sub COLLECTIONS-JENKINS-${Env}
+  IAMGroup1:
+    Type: AWS::IAM::Group
+    Properties:
+      GroupName: !Sub COLLECTIONS-JENKINS-${Env}-1
+
+  IAMUserToGroupAddition:
+    Type: AWS::IAM::UserToGroupAddition
+    Properties:
+      GroupName: !Ref IAMGroup
+      Users:
+        - !Ref IAMUser 
+
+  IAMUserToGroupAddition1:
+    Type: AWS::IAM::UserToGroupAddition
+    Properties:
+      GroupName: !Ref IAMGroup1
+      Users:
+        - !Ref IAMUser     
+
+  IAMUserPolicyCloudWatchLogPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: CloudWatchLog-policy
+      Users:
+      - Ref: IAMUser
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Sid: VisualEditor0
+          Effect: Allow
+          Action: logs:*
+          Resource: '*'
+  IAMUserPolicyEventPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: event-policy
+      Users:
+      - Ref: IAMUser
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Sid: VisualEditor0
+          Effect: Allow
+          Action:
+          - events:DescribeRule
+          - events:Put*
+          - events:List*
+          - events:Describe*
+          - events:Test*
+          - events:Create*
+          - events:EnableRule
+          - events:Put*
+          - events:TagResource
+          - events:UntagResource
+          Resource:
+          - !Sub arn:aws:events:us-east-1:${AWS::AccountId}:rule/eadm*
+          - !Sub arn:aws:events:us-east-1:${AWS::AccountId}:rule/route-opt*
+          - !Sub arn:aws:events:us-east-1:${AWS::AccountId}:rule/ocs*
+          - !Sub arn:aws:events:us-east-1:${AWS::AccountId}:rule/newton*
+          - !Sub arn:aws:events:us-east-1:${AWS::AccountId}:rule/build*
+          - !Sub arn:aws:events:us-east-1:${AWS::AccountId}:rule/ent*
+          - !Sub arn:aws:events:us-east-1:${AWS::AccountId}:rule/ondemand*
+          - !Sub arn:aws:events:us-east-1:${AWS::AccountId}:rule/insertion*
+  IAMUserPolicyIamPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: iam-policy
+      Users:
+      - Ref: IAMUser
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Action:
+          - iam:PassRole
+          Resource:
+          - !Sub arn:aws:iam::${AWS::AccountId}:role/EMR-Serverless-runtime-role
+          - !Sub arn:aws:iam::${AWS::AccountId}:role/route-opt-lambda-role*
+          - !Sub arn:aws:iam::${AWS::AccountId}:role/opan-main-lambda-role*
+          - !Sub arn:aws:iam::${AWS::AccountId}:role/route-opt-ec2-role*
+          - !Sub arn:aws:iam::${AWS::AccountId}:role/opan-route-opt-glue-role
+          - !Sub arn:aws:iam::${AWS::AccountId}:role/opan-route-opt-step-function-role
+          Effect: Allow
+  IAMUserPolicyLambdaSourcePolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: Lambda-source-policy
+      Users:
+      - Ref: IAMUser
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Sid: VisualEditor0
+          Effect: Allow
+          Action: lambda:CreateEventSourceMapping
+          Resource: '*'
+  IAMUserPolicySnsPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: SNS-policy
+      Users:
+      - Ref: IAMUser
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Sid: VisualEditor0
+          Effect: Allow
+          Action: sns:*
+          Resource:
+          - !Sub arn:aws:sns:us-east-1:${AWS::AccountId}:oc-*
+          - !Sub arn:aws:sns:us-east-1:${AWS::AccountId}:route-opt*
+          - !Sub arn:aws:sns:us-east-1:${AWS::AccountId}:ocs*
+          - !Sub arn:aws:sns:us-east-1:${AWS::AccountId}:eadm*
+          - !Sub arn:aws:sns:us-east-1:${AWS::AccountId}:data*
+          - arn:aws:sns:us-east-1:840814567073:eadm*
+          - arn:aws:sns:us-east-1:062209676060:route*
+  IAMGroupPolicyAmazonKinesisFullAccess:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: AmazonKinesisFullAccess
+      Groups:
+      - Ref: IAMGroup
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Sid: VisualEditor0
+          Effect: Allow
+          Action: kinesis:*
+          Resource:
+          - arn:aws:kinesis:us-east-1:840814567073:stream/eadm*
+  IAMGroupPolicyCloudformationPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: cloudformation-policy
+      Groups:
+      - Ref: IAMGroup
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Sid: VisualEditor0
+          Effect: Allow
+          Action:
+          - cloudformation:DescribeStackEvents
+          - cloudformation:CreateStack
+          - cloudformation:UpdateStack
+          - cloudformation:UpdateStackSet
+          - cloudformation:CreateChangeSet
+          - cloudformation:DescribeChangeSet
+          - cloudformation:ExecuteChangeSet
+          - cloudformation:CreateStackSet
+          - cloudformation:GetTemplateSummary
+          - cloudformation:DescribeStacks
+          - cloudformation:ListStacks
+          - cloudformation:RollbackStack
+          - cloudformation:GetTemplate
+          - cloudformation:ListChangeSets
+          Resource: '*'
+  IAMGroupPolicyCloudwatchPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: cloudwatch-policy
+      Groups:
+      - Ref: IAMGroup
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Sid: Statement1
+          Effect: Allow
+          Action:
+          - logs:*Tag*
+          - cloudwatch:List*
+          - cloudwatch:Describe*
+          - cloudwatch:Get*
+          - cloudwatch:PutDashboard
+          - cloudwatch:SetAlarmState
+          - cloudwatch:StartMetricStreams
+          - cloudwatch:StopMetricStreams
+          - cloudwatch:TagResource
+          - logs:CreateLogGroup
+          - cloudwatch:PutMetricAlarm
+          Resource:
+          - '*'
+  IAMGroupPolicyEc2Policy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: ec2-policy
+      Groups:
+      - Ref: IAMGroup
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Sid: Statement1
+          Effect: Allow
+          Action:
+          - ec2:Describe*
+          - ec2:Get*
+          - ec2:CreateImage
+          - ec2:CreateLaunchTemplate
+          - ec2:DeleteLaunchTemplateVersions
+          - ec2:StartInstances
+          - ec2:StopInstances
+          - autoscaling:CreateAutoscalingGroup
+          - autoscaling:DescribeAutoScalingGroups
+          - autoscaling:Get*
+          - autoscaling:Describe*
+          - ec2:CreateTags
+          - ec2:RunInstances
+          - ec2:DeregisterImage
+          - ec2:DeleteSnapshot
+          Resource:
+          - '*'
+        - Sid: Statement2
+          Effect: Allow
+          Action:
+          - ec2:CreateLaunchTemplateVersion
+          - ec2:ModifyLaunchTemplate
+          Resource:
+          - !Sub arn:aws:ec2:us-east-1:${AWS::AccountId}:launch-template/lt*
+        - Sid: Statement3
+          Effect: Allow
+          Action:
+          - autoscaling:UpdateAutoScalingGroup
+          - autoscaling:StartInstanceRefresh
+          - autoscaling:DescribeAutoScalingGroups
+          - autoscaling:CreateOrUpdateTags
+          - autoscaling:PutScalingPolicy
+          - autoscaling:EnableMetricsCollection
+          - autoscaling:DisableMetricsCollection
+          Resource:
+          - !Sub arn:aws:autoscaling:us-east-1:${AWS::AccountId}:autoScalingGroup:*:autoScalingGroupName/eadm*
+          - !Sub arn:aws:autoscaling:us-east-1:${AWS::AccountId}:autoScalingGroup:*:autoScalingGroupName/route-opt*
+  IAMGroupPolicyEMR:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: EMR
+      Groups:
+      - Ref: IAMGroup
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Sid: EMRServerlessFullAccess
+          Effect: Allow
+          Action:
+          - emr-serverless:*
+          Resource: '*'
+        - Sid: AllowEC2ENICreationWithEMRTags
+          Effect: Allow
+          Action:
+          - ec2:CreateNetworkInterface
+          Resource:
+          - !Sub arn:aws:ec2:us-east-1:${AWS::AccountId}:network-interface/*
+          - !Sub arn:aws:ec2:us-east-1:${AWS::AccountId}:subnet/*
+          - !Sub arn:aws:ec2:us-east-1:${AWS::AccountId}:security-group/*
+        - Sid: AllowEMRServerlessServiceLinkedRoleCreation
+          Effect: Allow
+          Action: iam:CreateServiceLinkedRole
+          Resource:
+            !Sub arn:aws:iam::${AWS::AccountId}:role/EMR-Serverless-runtime-role
+  IAMGroupPolicyLambdaPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: lambda-policy
+      Groups:
+      - Ref: IAMGroup
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Sid: Statement1
+          Effect: Allow
+          Action:
+          - lambda:List*
+          - lambda:Get*
+          - lambda:Create*
+          - lambda:Invoke*
+          - lambda:*Tag*
+          - lambda:Put*
+          - lambda:Update*
+          - lambda:Publish*
+          - lambda:Add*
+          - lambda:*Permission*
+          - lambda:DeleteFunction
+          - lambda:GetLayerVersion
+          - lambda:CreateEventSourceMapping
+          - lambda:GetEventSourceMapping
+          - lambda:DeleteFunctionConcurrency
+          Resource:
+          - !Sub arn:aws:lambda:us-east-1:${AWS::AccountId}:function:eadm*
+          - !Sub arn:aws:lambda:us-east-1:${AWS::AccountId}:function:wm*
+          - !Sub arn:aws:lambda:us-east-1:${AWS::AccountId}:function:newton*
+          - !Sub arn:aws:lambda:us-east-1:${AWS::AccountId}:function:daily*
+          - !Sub arn:aws:lambda:us-east-1:${AWS::AccountId}:layer:eadm*
+          - arn:aws:lambda:us-east-1:580247275435:layer:LambdaInsightsExtension*
+          - !Sub arn:aws:lambda:us-east-1:${AWS::AccountId}:event*
+          - !Sub arn:aws:lambda:us-east-1:${AWS::AccountId}:function:route-opt*
+          - !Sub arn:aws:lambda:us-east-1:${AWS::AccountId}:layer:route-opt*
+  IAMGroupPolicyS3Policy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: s3-policy
+      Groups:
+      - Ref: IAMGroup
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Sid: Statement1
+          Effect: Allow
+          Action:
+          - s3:List*
+          - s3:Get*
+          - s3:Create*
+          - s3:Put*
+          - s3:Describe*
+          - s3:Update*
+          - s3:DeleteObject
+          Resource:
+          - arn:aws:s3:::wm*
+          - arn:aws:s3:::opan*
+          - arn:aws:s3:::route-opt*
+  IAMGroupPolicySqsPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: sqs-policy
+      Groups:
+      - Ref: IAMGroup
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Sid: Statement1
+          Effect: Allow
+          Action:
+          - sqs:Get*
+          - sqs:List*
+          - sqs:ReceiveMessage
+          - sqs:CreateQueue
+          - sqs:ChangeMessageVisibility
+          - sqs:SendMessage
+          - sqs:SetQueueAttributes
+          - sqs:TagQueue
+          - sqs:DeleteQueue
+          Resource:
+          - !Sub arn:aws:sqs:us-east-1:${AWS::AccountId}:eadm*
+          - !Sub arn:aws:sqs:us-east-1:${AWS::AccountId}:wm*
+          - !Sub arn:aws:sqs:us-east-1:${AWS::AccountId}:route-opt*
+  IAMGroupPolicySsmPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: ssm-policy
+      Groups:
+      - Ref: IAMGroup
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Sid: Statement1
+          Effect: Allow
+          Action:
+          - ssm:GetParameters
+          - ssm:GetParameter
+          - ssm:DeleteParameter
+          - ssm:PutParameter
+          - ssm:AddTagsToResource
+          Resource:
+          - '*'
+
+  IAMGroupPolicyAPIGatewayPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: apigateway-policy
+      Groups:
+        - Ref: IAMGroup
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: VisualEditor0
+            Effect: Allow
+            Action:
+              - apigateway:PUT
+              - apigateway:PATCH
+              - apigateway:POST
+              - apigateway:GET
+              - apigateway:Update*
+            Resource:
+              - arn:aws:apigateway:us-east-1::/tags*
+              - arn:aws:apigateway:us-east-1::lambda:path*
+              - arn:aws:apigateway:us-east-1::/restapis*       
+
+  IAMGroupPolicyGluePolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: glue-policy
+      Groups:
+        - Ref: IAMGroup1
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: VisualEditor0
+            Effect: Allow
+            Action:
+              - glue:Create*
+              - glue:Update*
+              - glue:Delete*
+              - glue:Get*
+              - glue:List*
+              - glue:Start*
+              - glue:Stop*          
+            Resource:
+              - !Sub arn:aws:glue:us-east-1:${AWS::AccountId}:workflow/route-opt-*
+              - !Sub arn:aws:glue:us-east-1:${AWS::AccountId}:job/route-opt-*
+              - !Sub arn:aws:glue:us-east-1:${AWS::AccountId}:trigger/route-opt-*
+              
+  IAMGroupStepFunctionPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: step-function-policy
+      Groups:
+        - Ref: IAMGroup1
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: VisualEditor0
+            Effect: Allow
+            Action:
+              - states:CreateStateMachine
+              - states:DescribeStateMachine
+              - states:UpdateStateMachine
+              - states:TagResource
+            Resource:    
+              - !Sub arn:aws:states:us-east-1:${AWS::AccountId}:stateMachine:Calibration-*
+              - !Sub arn:aws:states:us-east-1:${AWS::AccountId}:stateMachine:route-opt-*
