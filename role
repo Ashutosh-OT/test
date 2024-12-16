@@ -9,6 +9,10 @@ Parameters:
       - PRD
     Description: Enter Environment Name.
 
+  TrustedAccountIDs:
+    Type: CommaDelimitedList
+    Description: List of AWS Account IDs that are allowed to assume this role.
+
 Resources:
   IAMRole:
     Type: AWS::IAM::Role
@@ -19,8 +23,7 @@ Resources:
         Statement:
           - Effect: Allow
             Principal:
-              Service:
-                - ec2.amazonaws.com
+              AWS: !Ref TrustedAccountIDs
             Action: sts:AssumeRole
 
   IAMUserPolicyCloudWatchLogPolicy:
