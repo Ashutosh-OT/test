@@ -28,6 +28,7 @@ Resources:
                 - sns.amazonaws.com
                 - events.amazonaws.com
                 - cloudformation.amazonaws.com
+                - kinesis.amazonaws.com
                 - apigateway.amazonaws.com
                 - ssm.amazonaws.com
                 - emr-serverless.amazonaws.com
