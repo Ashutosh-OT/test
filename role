@@ -13,6 +13,10 @@ Parameters:
     Type: CommaDelimitedList
     Description: List of AWS Account IDs that are allowed to assume this role.
 
+  InstanceIDs:
+    Type: CommaDelimitedList
+    Description: Comma-separated list of EC2 Instance IDs to attach this role.
+
 Resources:
   IAMRole:
     Type: AWS::IAM::Role
@@ -25,6 +29,19 @@ Resources:
             Principal:
               AWS: !Ref TrustedAccountIDs
             Action: sts:AssumeRole
+
+  InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      InstanceProfileName: !Sub route-opt-instance-profile-${Env}
+      Roles: 
+        - !Ref IAMRole
+
+  AttachRoleToInstances:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceIds: !Ref InstanceIDs
+      IamInstanceProfile: !Ref InstanceProfile
 
   IAMUserPolicyCloudWatchLogPolicy:
     Type: AWS::IAM::Policy
