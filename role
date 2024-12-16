@@ -21,17 +21,6 @@ Resources:
             Principal:
               Service:
                 - ec2.amazonaws.com
-                - lambda.amazonaws.com
-                - glue.amazonaws.com
-                - states.amazonaws.com
-                - sqs.amazonaws.com
-                - sns.amazonaws.com
-                - events.amazonaws.com
-                - cloudformation.amazonaws.com
-                - kinesis.amazonaws.com
-                - apigateway.amazonaws.com
-                - ssm.amazonaws.com
-                - emr-serverless.amazonaws.com
             Action: sts:AssumeRole
 
   IAMUserPolicyCloudWatchLogPolicy:
